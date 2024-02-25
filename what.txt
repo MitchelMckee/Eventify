@@ -1,0 +1,7 @@
+- Enter list of tasks, including a location and time
+- Run sentence through task extractor to get an array of the tasks
+- Run each task through the model to predict the location and time of the task
+    - Model trained on preproccesed mslatte
+    - Enter task sentence
+- Create calendar event(s) based on this output
+- Return this event
