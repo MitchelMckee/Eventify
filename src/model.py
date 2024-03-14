@@ -1,15 +1,18 @@
 import os
-from keras.optimizers.legacy import Adam # Use legacy version of Adam to avoid warnings
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
-from sklearn.preprocessing import MultiLabelBinarizer
-from keras.layers import Input, Embedding, Dense, Conv1D, Dropout, Conv1D, MaxPooling1D, Flatten
-from keras.models import Model, load_model
 import numpy as np
 import json
 
+from keras.optimizers.legacy import Adam # Use legacy version of Adam to avoid warnings
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+from keras.layers import Input, Embedding, Dense, Conv1D, Dropout, Conv1D, MaxPooling1D, Flatten
+from keras.models import Model, load_model
+from keras.callbacks import EarlyStopping
+
+from sklearn.preprocessing import MultiLabelBinarizer
+
 # Parameters
-epochs = 1
+epochs = 50
 time_pred_threshold = 0.8 # How confident the model has to be to predict a time
 batch_size = 32
 model_path = './model/model.keras'
@@ -89,49 +92,6 @@ def load_saved_model():
     _, _, _, _, _, _, tokenizer, locations, times, max_sequence_length = load_data()
     return model, tokenizer, locations, times, max_sequence_length
         
-# def train_model(learning_rate, dropout_rate, num_filters, kernel_size, embedding_dim):
-#     print("Training a new model...")
-
-#     train_data, train_location_labels, train_time_labels, test_data, test_location_labels, test_time_labels, tokenizer, locations, times, max_sequence_length = load_data()
-#     model = build_model(max_sequence_length, len(locations), len(times), learning_rate, dropout_rate, num_filters, kernel_size, embedding_dim)
-#     model.fit(train_data, {'location_output': train_location_labels, 'time_output': train_time_labels},
-#             batch_size=batch_size, epochs=epochs, validation_data=(test_data, {'location_output': test_location_labels, 'time_output': test_time_labels}))
-#     model.save(model_path)
-    
-#     print("Model trained and saved.")
-#     return model, tokenizer, locations, times, max_sequence_length
-
-
-# def evaluate_model(hyperparameters):
-#     # Unpack the hyperparameters
-#     learning_rate, dropout_rate, num_filters, kernel_size, embedding_dim = hyperparameters
-    
-#     # Load and preprocess the data (assuming a function exists for this)
-#     train_data, train_location_labels, train_time_labels, test_data, test_location_labels, test_time_labels, tokenizer, locations, times, max_sequence_length = load_data()
-
-#     # Build the model with the given hyperparameters
-#     model = build_model(input_shape=max_sequence_length, 
-#                         num_locations=len(locations),  
-#                         num_times=len(times),
-#                         learning_rate=learning_rate, 
-#                         dropout_rate=dropout_rate, 
-#                         num_filters=num_filters, 
-#                         kernel_size=kernel_size, 
-#                         embedding_dim=embedding_dim)
-    
-#     # Train the model (consider adding validation_split to model.fit for internal validation)
-#     model.fit(train_data, {'location_output': train_location_labels, 'time_output': train_time_labels},
-#             batch_size=batch_size, epochs=epochs, validation_data=(test_data, {'location_output': test_location_labels, 'time_output': test_time_labels}))
-    
-#     # Evaluate the model on the test set
-#     evaluation_results = model.evaluate(test_data, {'location_output': test_location_labels, 'time_output': test_time_labels}, batch_size=batch_size)
-    
-#     # Assuming evaluation_results contains loss and accuracy, and you want to maximize accuracy
-#     accuracy = evaluation_results[1]  # This index might change based on how your model's metrics are structured
-    
-#     # Return the negative accuracy because the optimizer seeks to minimize the objective function
-#     return -accuracy
-
 def train_and_evaluate_model(hyperparameters):
     learning_rate, dropout_rate, num_filters, kernel_size, embedding_dim = hyperparameters
 
@@ -140,10 +100,12 @@ def train_and_evaluate_model(hyperparameters):
     kernel_size = int(kernel_size)
     num_filters = int(num_filters)
     embedding_dim = int(embedding_dim)
+
+    early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True, verbose=1, mode='min', min_delta=0.001)
     
     model = build_model(max_sequence_length, len(locations), len(times), learning_rate, dropout_rate, num_filters, kernel_size, embedding_dim)
     model.fit(train_data, {'location_output': train_location_labels, 'time_output': train_time_labels},
-            batch_size=batch_size, epochs=epochs, validation_data=(test_data, {'location_output': test_location_labels, 'time_output': test_time_labels}))
+            batch_size=batch_size, epochs=epochs, validation_data=(test_data, {'location_output': test_location_labels, 'time_output': test_time_labels}), callbacks=[early_stopping])
     
     results = model.evaluate(test_data, {'location_output': test_location_labels, 'time_output': test_time_labels}, batch_size=batch_size)
     location_accuracy = results[3]
