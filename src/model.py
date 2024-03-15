@@ -12,7 +12,7 @@ from keras.callbacks import EarlyStopping
 from sklearn.preprocessing import MultiLabelBinarizer
 
 # Parameters
-epochs = 50
+epochs = 20
 time_pred_threshold = 0.8 # How confident the model has to be to predict a time
 batch_size = 32
 model_path = './model/model.keras'

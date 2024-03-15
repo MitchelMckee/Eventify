@@ -22,6 +22,7 @@ def optimize_hyperparameters():
     max_no_improvement = 20
     
     for i in range(iterations):
+        print(f"Iteration {i+1}/{iterations}")
         xopt, fopt = pso(objective_function, lb, ub, swarmsize=10, maxiter=1, debug=True)
         if -fopt < best_score:
             best_score = -fopt
